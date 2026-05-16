@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniShell - مكتبة أوامر الأنظمة المتعددة</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --border: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-purple: #bc8cff;
+            --accent-orange: #d2991d;
+            --accent-red: #f85149;
+            --accent-cyan: #39d2c0;
+            --sidebar-width: 280px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Cairo', 'Tahoma', sans-serif;
+            background: #0a0e13;
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: var(--bg-primary);
+        }
+
+        /* ═══ TITLEBAR ═══ */
+        .titlebar {
+            height: 42px;
+            background: #0d1117;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .titlebar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .titlebar-logo {
+            font-size: 20px;
+        }
+        .titlebar-title {
+            font-size: 14px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .titlebar-version {
+            font-size: 10px;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+
+        /* ═══ MAIN LAYOUT ═══ */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* ═══ SIDEBAR ═══ */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .sidebar-header {
+            padding: 14px 16px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 700;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+        .sidebar-category {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-right: 3px solid transparent;
+            font-weight: 500;
+        }
+        .sidebar-category:hover {
+            background: rgba(88, 166, 255, 0.05);
+            color: var(--text-primary);
+        }
+        .sidebar-category.active {
+            background: rgba(88, 166, 255, 0.08);
+            color: var(--accent-blue);
+            border-right-color: var(--accent-blue);
+        }
+        .sidebar-category .count {
+            margin-right: auto;
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .sidebar-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 6px 12px;
+        }
+        .sidebar-section-title {
+            padding: 10px 16px 4px;
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+        .filter-chip {
+            padding: 6px 10px;
+            margin: 2px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            text-align: center;
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+        .filter-chip:hover {
+            background: rgba(88, 166, 255, 0.05);
+        }
+        .filter-chip.active {
+            background: rgba(88, 166, 255, 0.1);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+        .filter-chip.all {
+            color: var(--accent-orange);
+        }
+        .filter-chip.windows {
+            color: var(--accent-blue);
+        }
+        .filter-chip.powershell {
+            color: var(--accent-cyan);
+        }
+        .filter-chip.linux {
+            color: var(--accent-green);
+        }
+        .filter-chip.macos {
+            color: var(--accent-purple);
+        }
+
+        /* ═══ CONTENT ═══ */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .category-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .category-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .search-box {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-family: inherit;
+            font-size: 12px;
+            width: 250px;
+            outline: none;
+            transition: 0.2s;
+        }
+        .search-box:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.15);
+        }
+
+        /* ═══ COMMANDS SCROLL ═══ */
+        .commands-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 20px;
+        }
+
+        /* ═══ SYSTEM SECTION ═══ */
+        .system-section {
+            margin-bottom: 20px;
+        }
+        .system-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            font-size: 15px;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 10px;
+            position: sticky;
+            top: 0;
+            background: var(--bg-primary);
+            z-index: 10;
+        }
+        .system-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .system-dot.win {
+            background: var(--accent-blue);
+            box-shadow: 0 0 8px var(--accent-blue);
+        }
+        .system-dot.ps {
+            background: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+        .system-dot.lin {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+        .system-dot.mac {
+            background: var(--accent-purple);
+            box-shadow: 0 0 8px var(--accent-purple);
+        }
+
+        /* ═══ COMMAND CARDS ═══ */
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 12px;
+        }
+        .command-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.25s;
+            position: relative;
+        }
+        .command-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        .command-card.expanded {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 25px rgba(188, 140, 255, 0.2);
+            grid-column: 1 / -1;
+        }
+        .command-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .command-name {
+            font-family: 'Cascadia Code', 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-green);
+            direction: ltr;
+            display: inline-block;
+        }
+        .command-system-badge {
+            font-size: 10px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .badge-cmd {
+            background: rgba(88, 166, 255, 0.15);
+            color: var(--accent-blue);
+        }
+        .badge-ps {
+            background: rgba(57, 210, 192, 0.15);
+            color: var(--accent-cyan);
+        }
+        .badge-linux {
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--accent-green);
+        }
+        .badge-mac {
+            background: rgba(188, 140, 255, 0.15);
+            color: var(--accent-purple);
+        }
+        .command-ar-desc {
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        .command-syntax {
+            background: var(--bg-tertiary);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-family: 'Cascadia Code', monospace;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            direction: ltr;
+            text-align: left;
+            border-right: 3px solid var(--accent-orange);
+        }
+        .command-details {
+            display: none;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .command-card.expanded .command-details {
+            display: block;
+        }
+        .detail-section {
+            margin-bottom: 12px;
+        }
+        .detail-label {
+            font-size: 11px;
+            color: var(--accent-purple);
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+        .detail-examples {
+            background: var(--bg-tertiary);
+            padding: 10px;
+            border-radius: 8px;
+            font-family: 'Cascadia Code', monospace;
+            font-size: 11px;
+            direction: ltr;
+            text-align: left;
+            line-height: 1.8;
+        }
+        .detail-examples .example-line {
+            color: var(--accent-green);
+        }
+        .detail-examples .example-desc {
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+        .cross-ref {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+        .cross-ref-chip {
+            background: rgba(188, 140, 255, 0.1);
+            border: 1px solid rgba(188, 140, 255, 0.3);
+            padding: 5px 12px;
+            border-radius: 14px;
+            font-size: 10px;
+            font-family: 'Cascadia Code', monospace;
+            color: var(--accent-purple);
+            direction: ltr;
+        }
+        .btn-copy {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--accent-blue);
+            background: rgba(88, 166, 255, 0.1);
+            color: var(--accent-blue);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            transition: 0.2s;
+            margin-top: 4px;
+        }
+        .btn-copy:hover {
+            background: rgba(88, 166, 255, 0.2);
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.2);
+        }
+        .btn-copy.copied {
+            background: rgba(63, 185, 80, 0.2);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        .btn-run {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--accent-green);
+            background: rgba(63, 185, 80, 0.1);
+            color: var(--accent-green);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            transition: 0.2s;
+            margin-top: 4px;
+            margin-left: 8px;
+        }
+        .btn-run:hover {
+            background: rgba(63, 185, 80, 0.2);
+            box-shadow: 0 0 20px rgba(63, 185, 80, 0.2);
+        }
+        .danger-level {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 700;
+        }
+        .danger-low {
+            background: rgba(63, 185, 80, 0.2);
+            color: var(--accent-green);
+        }
+        .danger-medium {
+            background: rgba(210, 153, 29, 0.2);
+            color: var(--accent-orange);
+        }
+        .danger-high {
+            background: rgba(248, 81, 73, 0.2);
+            color: var(--accent-red);
+        }
+        .danger-critical {
+            background: rgba(248, 81, 73, 0.35);
+            color: #fff;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* ═══ TOAST NOTIFICATION ═══ */
+        .toast {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent-green);
+            color: #0d1117;
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 13px;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            box-shadow: 0 4px 20px rgba(63, 185, 80, 0.4);
+        }
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* ═══ STATUS BAR ═══ */
+        .statusbar {
+            height: 28px;
+            background: var(--accent-blue);
+            color: #0d1117;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* ═══ SCROLLBAR ═══ */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 50px;
+            }
+            .sidebar-category span:not(.icon) {
+                display: none;
+            }
+            .sidebar-category .count {
+                display: none;
+            }
+            .sidebar-header,
+            .sidebar-section-title {
+                display: none;
+            }
+            .filter-chip {
+                font-size: 0;
+                padding: 8px;
+                text-align: center;
+            }
+            .filter-chip::after {
+                content: '•';
+                font-size: 14px;
+            }
+            .commands-grid {
+                grid-template-columns: 1fr;
+            }
+            .search-box {
+                width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- ═══ TITLEBAR ═══ -->
+        <div class="titlebar">
+            <div class="titlebar-left">
+                <span class="titlebar-logo">⬡</span>
+                <span class="titlebar-title">OmniShell</span>
+                <span class="titlebar-version">v1.0.0</span>
+            </div>
+            <div style="color:var(--text-muted);font-size:12px;">مكتبة أوامر الأنظمة المتعددة | Multi-OS Command Library</div>
+        </div>
+
+        <!-- ═══ MAIN LAYOUT ═══ -->
+        <div class="main-layout">
+
+            <!-- ═══ SIDEBAR ═══ -->
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-header">📂 فئات الأوامر</div>
+
+                <div class="sidebar-category active" data-category="all">
+                    📋 جميع الأوامر
+                    <span class="count">48</span>
+                </div>
+
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-section-title">💾 الملفات والتخزين</div>
+
+                <div class="sidebar-category" data-category="file-management">
+                    📁 إدارة الملفات
+                    <span class="count">16</span>
+                </div>
+                <div class="sidebar-category" data-category="disk-management">
+                    💿 إدارة الأقراص
+                    <span class="count">8</span>
+                </div>
+
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-section-title">🌐 الشبكات</div>
+
+                <div class="sidebar-category" data-category="networking">
+                    🌍 الشبكات والاتصالات
+                    <span class="count">12</span>
+                </div>
+
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-section-title">⚙️ النظام</div>
+
+                <div class="sidebar-category" data-category="system-management">
+                    🖥 إدارة النظام
+                    <span class="count">10</span>
+                </div>
+                <div class="sidebar-category" data-category="process-management">
+                    📊 إدارة العمليات
+                    <span class="count">6</span>
+                </div>
+
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-section-title">🔐 الحماية</div>
+
+                <div class="sidebar-category" data-category="security-permissions">
+                    🔒 الصلاحيات والأمان
+                    <span class="count">8</span>
+                </div>
+
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-section-title">📝 النصوص</div>
+
+                <div class="sidebar-category" data-category="text-processing">
+                    📝 معالجة النصوص
+                    <span class="count">8</span>
+                </div>
+
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-section-title">🔧 متقدم</div>
+
+                <div class="sidebar-category" data-category="advanced">
+                    🛠 أوامر متقدمة
+                    <span class="count">6</span>
+                </div>
+
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-section-title">🔍 تصفية حسب النظام</div>
+                <div class="filter-chip all active" data-filter="all">🌐 جميع الأنظمة</div>
+                <div class="filter-chip windows" data-filter="cmd">⊞ Windows CMD</div>
+                <div class="filter-chip powershell" data-filter="powershell">⚡ PowerShell</div>
+                <div class="filter-chip linux" data-filter="linux">🐧 Linux Shell</div>
+                <div class="filter-chip macos" data-filter="macos">🍎 macOS Terminal</div>
+            </div>
+
+            <!-- ═══ CONTENT AREA ═══ -->
+            <div class="content-area">
+                <div class="category-header">
+                    <div class="category-title" id="categoryName">📋 جميع الأوامر</div>
+                    <div style="display:flex;gap:12px;align-items:center;">
+                        <span style="font-size:11px;color:var(--text-muted);" id="visibleCount">48 أمر</span>
+                        <input type="text" class="search-box" id="searchBox" placeholder="🔍 بحث في الأوامر...">
+                    </div>
+                </div>
+                <div class="commands-scroll" id="commandsContainer"></div>
+            </div>
+        </div>
+
+        <!-- ═══ STATUS BAR ═══ -->
+        <div class="statusbar">
+            <span>✅ المكتبة جاهزة | 48 أمر | 4 أنظمة | 9 فئات</span>
+            <span>OmniShell v1.0.0 | Ultimate Multi-OS Command Library</span>
+        </div>
+
+        <!-- ═══ TOAST ═══ -->
+        <div class="toast" id="toast">✅ تم نسخ الأمر!</div>
+
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════
+        // قاعدة بيانات الأوامر مع شرح عربي
+        // ═══════════════════════════════════════════
+        const commandDatabase = [{
+            id: 1,
+            category: 'file-management',
+            system: 'cmd',
+            command: 'dir',
+            syntax: 'dir [المسار] [/A] [/B] [/O] [/S] [/P]',
+            descriptionAr: 'يعرض قائمة بجميع الملفات والمجلدات الفرعية داخل مجلد معين. من أكثر الأوامر استخدامًا في Windows CMD للتنقل ومعرفة محتويات المجلدات.',
+            examplesAr: [
+                { cmd: 'dir', desc: 'عرض محتويات المجلد الحالي' },
+                { cmd: 'dir /A:H', desc: 'عرض الملفات المخفية فقط' },
+                { cmd: 'dir /O:-D', desc: 'ترتيب الملفات حسب التاريخ من الأحدث للأقدم' },
+                { cmd: 'dir C:\\Windows /S', desc: 'عرض كل الملفات داخل مجلد Windows وجميع المجلدات الفرعية' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { linux: 'ls -la', powershell: 'Get-ChildItem', macos: 'ls -la' },
+            parametersAr: ['/A - عرض الملفات بصفات محددة', '/B - عرض مختصر بدون تفاصيل', '/O - ترتيب النتائج',
+                '/S - تضمين المجلدات الفرعية', '/P - توقف مؤقت بعد كل شاشة'
+            ]
+        }, {
+            id: 2,
+            category: 'file-management',
+            system: 'powershell',
+            command: 'Get-ChildItem',
+            syntax: 'Get-ChildItem [-Path] [المسار] [-Recurse] [-Force] [-Hidden]',
+            descriptionAr: 'يجلب الملفات والمجلدات في موقع محدد. هذا الأمر هو المقابل لـ dir في CMD و ls في Linux، لكنه أقوى بكثير ويدعم خيارات متقدمة.',
+            examplesAr: [
+                { cmd: 'Get-ChildItem', desc: 'عرض محتويات المجلد الحالي' },
+                { cmd: 'Get-ChildItem -Recurse', desc: 'عرض الملفات في كل المجلدات الفرعية' },
+                { cmd: 'Get-ChildItem -Hidden', desc: 'عرض الملفات المخفية فقط' },
+                { cmd: 'Get-ChildItem *.txt', desc: 'عرض الملفات النصية فقط' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'dir', linux: 'ls -la', macos: 'ls -la' },
+            parametersAr: ['-Path - تحديد المسار', '-Recurse - البحث في المجلدات الفرعية', '-Force - تضمين الملفات المخفية والنظام',
+                '-Hidden - الملفات المخفية فقط'
+            ]
+        }, {
+            id: 3,
+            category: 'file-management',
+            system: 'linux',
+            command: 'ls',
+            syntax: 'ls [خيارات] [ملف/مجلد]',
+            descriptionAr: 'أمر أساسي في Linux لعرض محتويات المجلدات. يدعم ألوانًا وخيارات متعددة للتحكم في شكل وترتيب العرض. من أول الأوامر اللي بيتعلمها أي مستخدم Linux.',
+            examplesAr: [
+                { cmd: 'ls -la', desc: 'عرض كل الملفات (بما فيها المخفية) مع تفاصيل كاملة' },
+                { cmd: 'ls -lh', desc: 'عرض أحجام الملفات بشكل مقروء (KB, MB, GB)' },
+                { cmd: 'ls -R', desc: 'عرض محتويات كل المجلدات الفرعية بشكل تكراري' },
+                { cmd: 'ls -lt', desc: 'ترتيب الملفات حسب وقت التعديل (الأحدث أولاً)' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'dir', powershell: 'Get-ChildItem', macos: 'ls -la' },
+            parametersAr: ['-l - عرض تفصيلي', '-a - عرض الملفات المخفية', '-h - أحجام مقروءة للبشر',
+                '-R - عرض تكراري', '-t - ترتيب حسب الوقت'
+            ]
+        }, {
+            id: 4,
+            category: 'file-management',
+            system: 'macos',
+            command: 'ls',
+            syntax: 'ls [-la] [-lh] [-R] [ملف/مجلد]',
+            descriptionAr: 'نفس أمر ls الموجود في Linux لكن بنسخة BSD الخاصة بـ macOS. يعمل بنفس الطريقة تقريبًا مع بعض الاختلافات البسيطة في الخيارات المتقدمة.',
+            examplesAr: [
+                { cmd: 'ls -la', desc: 'عرض كل الملفات مع التفاصيل الكاملة' },
+                { cmd: 'ls -lh', desc: 'عرض الأحجام بشكل مقروء' },
+                { cmd: 'ls -l@', desc: 'عرض الصفات الموسعة للملفات (خاصية macOS)' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'dir', powershell: 'Get-ChildItem', linux: 'ls -la' },
+            parametersAr: ['-l - عرض تفصيلي', '-a - الملفات المخفية', '-@ - الصفات الموسعة', '-h - أحجام مقروءة']
+        }, {
+            id: 5,
+            category: 'file-management',
+            system: 'cmd',
+            command: 'copy',
+            syntax: 'copy [المصدر] [الوجهة] [/Y] [/-Y] [/V]',
+            descriptionAr: 'ينسخ ملف أو مجموعة ملفات من مكان لآخر. أداة أساسية للنسخ في Windows CMD. يمكن استخدامه لنسخ ملف واحد أو دمج عدة ملفات في ملف واحد.',
+            examplesAr: [
+                { cmd: 'copy file.txt D:\\Backup\\', desc: 'نسخ ملف إلى مجلد النسخ الاحتياطي' },
+                { cmd: 'copy *.txt D:\\Backup\\', desc: 'نسخ كل الملفات النصية لمجلد آخر' },
+                { cmd: 'copy /Y file1.txt file2.txt', desc: 'نسخ مع تجاهل رسالة التأكيد' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { linux: 'cp', powershell: 'Copy-Item', macos: 'cp' },
+            parametersAr: ['/Y - تجاهل رسالة التأكيد', '/-Y - طلب التأكيد قبل الكتابة', '/V - التحقق من صحة النسخ']
+        }, {
+            id: 6,
+            category: 'file-management',
+            system: 'linux',
+            command: 'cp',
+            syntax: 'cp [خيارات] المصدر الوجهة',
+            descriptionAr: 'أمر نسخ الملفات والمجلدات في Linux. يتميز بمرونة عالية وخيارات متعددة مثل الحفاظ على الصلاحيات والتاريخ وإمكانية النسخ التكراري للمجلدات.',
+            examplesAr: [
+                { cmd: 'cp file.txt /backup/', desc: 'نسخ ملف لمجلد النسخ الاحتياطي' },
+                { cmd: 'cp -r folder/ /backup/', desc: 'نسخ مجلد كامل بكل محتوياته' },
+                { cmd: 'cp -p file.txt /backup/', desc: 'نسخ مع الحفاظ على الصلاحيات والتاريخ' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'copy', powershell: 'Copy-Item', macos: 'cp -R' },
+            parametersAr: ['-r - نسخ تكراري للمجلدات', '-p - الحفاظ على الخصائص', '-u - نسخ الملفات الأحدث فقط',
+                '-v - عرض تفاصيل العملية'
+            ]
+        }, {
+            id: 7,
+            category: 'file-management',
+            system: 'cmd',
+            command: 'del',
+            syntax: 'del [ملف] [/P] [/F] [/S] [/Q]',
+            descriptionAr: 'يحذف ملف أو مجموعة ملفات بشكل نهائي. يجب الحذر عند استخدامه مع الخيار /S لأنه سيمسح الملفات من كل المجلدات الفرعية. لا توجد سلة محذوفات لاستعادة الملفات.',
+            examplesAr: [
+                { cmd: 'del file.txt', desc: 'حذف ملف واحد' },
+                { cmd: 'del /F /Q *.tmp', desc: 'حذف كل الملفات المؤقتة بالقوة وبدون تأكيد' },
+                { cmd: 'del /S *.log', desc: 'حذف ملفات السجل من كل المجلدات الفرعية' }
+            ],
+            dangerLevel: 'high',
+            crossRef: { linux: 'rm', powershell: 'Remove-Item', macos: 'rm' },
+            parametersAr: ['/P - طلب التأكيد قبل الحذف', '/F - حذف الملفات للقراءة فقط بالقوة', '/S - حذف من المجلدات الفرعية',
+                '/Q - الوضع الصامت بدون تأكيد'
+            ]
+        }, {
+            id: 8,
+            category: 'file-management',
+            system: 'linux',
+            command: 'rm',
+            syntax: 'rm [خيارات] ملف/مجلد',
+            descriptionAr: 'أمر حذف الملفات والمجلدات في Linux. من أخطر الأوامر على الإطلاق! الأمر rm -rf / يمكن أن يدمر النظام بالكامل. استخدمه بحذر شديد وتأكد دائمًا مما تحذفه.',
+            examplesAr: [
+                { cmd: 'rm file.txt', desc: 'حذف ملف واحد' },
+                { cmd: 'rm -rf folder/', desc: 'حذف مجلد كامل بكل محتوياته (خطير!)' },
+                { cmd: 'rm -i *.tmp', desc: 'حذف الملفات المؤقتة مع طلب التأكيد لكل ملف' }
+            ],
+            dangerLevel: 'critical',
+            crossRef: { cmd: 'del /F /S', powershell: 'Remove-Item -Recurse -Force', macos: 'rm -rf' },
+            parametersAr: ['-r - حذف تكراري للمجلدات', '-f - بالقوة بدون تأكيد (خطير!)', '-i - طلب التأكيد لكل ملف',
+                '-v - عرض تفاصيل الحذف'
+            ]
+        }, {
+            id: 9,
+            category: 'file-management',
+            system: 'powershell',
+            command: 'Remove-Item',
+            syntax: 'Remove-Item [-Path] [المسار] [-Recurse] [-Force] [-WhatIf]',
+            descriptionAr: 'أمر PowerShell لحذف الملفات والمجلدات. أكثر أمانًا من del و rm لأنه يدعم WhatIf اللي بيعرض اللي هيحصل قبل التنفيذ الفعلي.',
+            examplesAr: [
+                { cmd: 'Remove-Item file.txt', desc: 'حذف ملف' },
+                { cmd: 'Remove-Item -Recurse -Force folder\\', desc: 'حذف مجلد كامل بالقوة' },
+                { cmd: 'Remove-Item -WhatIf *.tmp', desc: 'معاينة الملفات اللي ستُحذف بدون حذف فعلي' }
+            ],
+            dangerLevel: 'high',
+            crossRef: { cmd: 'del', linux: 'rm -rf', macos: 'rm -rf' },
+            parametersAr: ['-Recurse - حذف المجلدات الفرعية', '-Force - الحذف بالقوة', '-WhatIf - معاينة فقط بدون تنفيذ',
+                '-Confirm - طلب التأكيد'
+            ]
+        }, {
+            id: 10,
+            category: 'file-management',
+            system: 'linux',
+            command: 'chmod',
+            syntax: 'chmod [خيارات] الصلاحيات ملف/مجلد',
+            descriptionAr: 'يغير صلاحيات الملفات والمجلدات في Linux. الصلاحيات ثلاثة أنواع: قراءة (r=4) كتابة (w=2) تنفيذ (x=1). الأمر chmod 755 يجعل الملف قابل للتنفيذ مع حماية ضد التعديل من الآخرين.',
+            examplesAr: [
+                { cmd: 'chmod 755 script.sh', desc: 'جعل السكربت قابل للتنفيذ للكل وقابل للتعديل للمالك فقط' },
+                { cmd: 'chmod +x file.sh', desc: 'إضافة صلاحية التنفيذ للملف' },
+                { cmd: 'chmod -R 644 folder/', desc: 'جعل كل الملفات قراءة للكل وكتابة للمالك فقط' }
+            ],
+            dangerLevel: 'medium',
+            crossRef: { cmd: 'icacls', powershell: 'Set-Acl', macos: 'chmod' },
+            parametersAr: ['755 - صلاحيات كاملة للمالك وقراءة وتنفيذ للآخرين', '644 - قراءة وكتابة للمالك وقراءة فقط للآخرين',
+                '-R - تطبيق على كل المجلدات الفرعية'
+            ]
+        }, {
+            id: 11,
+            category: 'file-management',
+            system: 'cmd',
+            command: 'attrib',
+            syntax: 'attrib [+R|-R] [+H|-H] [+S|-S] [ملف] [/S]',
+            descriptionAr: 'يعرض أو يغير خصائص الملفات في Windows. يمكنك جعل الملف مخفي أو للنظام أو للقراءة فقط. مفيد جدًا لحماية الملفات الحساسة من التعديل أو الحذف.',
+            examplesAr: [
+                { cmd: 'attrib', desc: 'عرض خصائص كل الملفات في المجلد الحالي' },
+                { cmd: 'attrib +H file.txt', desc: 'إخفاء ملف عن الظهور العادي' },
+                { cmd: 'attrib -R -S -H *.* /S', desc: 'إزالة كل الخصائص من كل الملفات' }
+            ],
+            dangerLevel: 'medium',
+            crossRef: { linux: 'chattr', powershell: 'Set-ItemProperty', macos: 'chflags' },
+            parametersAr: ['+R/-R - للقراءة فقط', '+H/-H - مخفي', '+S/-S - ملف نظام', '/S - يشمل المجلدات الفرعية']
+        }, {
+            id: 12,
+            category: 'disk-management',
+            system: 'cmd',
+            command: 'diskpart',
+            syntax: 'diskpart [/s سكربت]',
+            descriptionAr: 'أداة تقسيم وإدارة الأقراص في Windows. من أقوى وأخطر الأدوات لأنها تتعامل مع الأقراص مباشرة. تستطيع إنشاء وحذف وتهيئة الأقسام وتنظيف الأقراص بالكامل.',
+            examplesAr: [
+                { cmd: 'diskpart', desc: 'فتح الأداة للعمل التفاعلي' },
+                { cmd: 'diskpart → list disk', desc: 'عرض جميع الأقراص المتصلة' },
+                { cmd: 'diskpart → select disk 0 → clean', desc: 'تنظيف القرص الأول بالكامل (خطير جدًا!)' }
+            ],
+            dangerLevel: 'critical',
+            crossRef: { linux: 'fdisk / parted', powershell: 'Get-Disk', macos: 'diskutil' },
+            parametersAr: ['list disk - عرض الأقراص', 'select disk X - اختيار قرص', 'clean - مسح القرص بالكامل',
+                'create partition primary - إنشاء قسم أساسي'
+            ]
+        }, {
+            id: 13,
+            category: 'disk-management',
+            system: 'linux',
+            command: 'fdisk',
+            syntax: 'fdisk [خيارات] [القرص]',
+            descriptionAr: 'أداة تقسيم الأقراص في Linux. تستخدم لإدارة جداول التقسيم MBR و GPT. أمر قوي يحتاج لصلاحيات root للعمل. يمكنك إنشاء وحذف وتعديل الأقسام.',
+            examplesAr: [
+                { cmd: 'fdisk -l', desc: 'عرض جميع الأقراص وأقسامها' },
+                { cmd: 'sudo fdisk /dev/sda', desc: 'فتح القرص الأول للتعديل (يتطلب صلاحيات)' }
+            ],
+            dangerLevel: 'critical',
+            crossRef: { cmd: 'diskpart', powershell: 'Get-Disk', macos: 'diskutil' },
+            parametersAr: ['-l - عرض قائمة الأقراص', '/dev/sda - القرص الأول', 'm - قائمة المساعدة داخل الأداة']
+        }, {
+            id: 14,
+            category: 'disk-management',
+            system: 'cmd',
+            command: 'chkdsk',
+            syntax: 'chkdsk [القرص:] [/F] [/R] [/X]',
+            descriptionAr: 'يفحص القرص الصلب ويصلح الأخطاء. مهم جدًا عندما تلاحظ بطء في النظام أو مشاكل في فتح الملفات. الخيار /R يفحص القطاعات التالفة ويحاول استعادة البيانات.',
+            examplesAr: [
+                { cmd: 'chkdsk', desc: 'فحص القرص الحالي (وضع القراءة فقط)' },
+                { cmd: 'chkdsk C: /F', desc: 'فحص وإصلاح أخطاء القرص C' },
+                { cmd: 'chkdsk D: /R /X', desc: 'فحص شامل مع إصلاح القطاعات التالفة' }
+            ],
+            dangerLevel: 'medium',
+            crossRef: { linux: 'fsck', powershell: 'Repair-Volume', macos: 'fsck_hfs' },
+            parametersAr: ['/F - إصلاح الأخطاء', '/R - تحديد القطاعات التالفة', '/X - فصل القرص قسريًا قبل الفحص']
+        }, {
+            id: 15,
+            category: 'disk-management',
+            system: 'linux',
+            command: 'df',
+            syntax: 'df [خيارات] [ملف/مجلد]',
+            descriptionAr: 'يعرض معلومات عن المساحة المستخدمة والمتبقية في أنظمة الملفات. من أهم الأوامر لمراقبة مساحة القرص. الخيار -h يجعل الأرقام مقروءة بالـ GB و MB.',
+            examplesAr: [
+                { cmd: 'df -h', desc: 'عرض مساحة الأقراص بشكل مقروء' },
+                { cmd: 'df -h /home', desc: 'عرض مساحة مجلد المنزل فقط' },
+                { cmd: 'df -i', desc: 'عرض استخدام الـ inodes' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'wmic logicaldisk', powershell: 'Get-PSDrive', macos: 'df -h' },
+            parametersAr: ['-h - عرض مقروء للبشر', '-i - معلومات الـ inodes', '-T - عرض نوع نظام الملفات']
+        }, {
+            id: 16,
+            category: 'disk-management',
+            system: 'linux',
+            command: 'du',
+            syntax: 'du [خيارات] [ملف/مجلد]',
+            descriptionAr: 'يحسب المساحة المستخدمة بواسطة الملفات والمجلدات. ممتاز لمعرفة ما الذي يستهلك مساحة القرص. الخيار -s يعطيك ملخص فقط بدون تفاصيل كل ملف.',
+            examplesAr: [
+                { cmd: 'du -sh *', desc: 'عرض ملخص لحجم كل عنصر في المجلد الحالي' },
+                { cmd: 'du -h --max-depth=1', desc: 'عرض الأحجام لمستوى واحد فقط من المجلدات' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'dir /S', powershell: 'Get-ChildItem -Recurse | Measure-Object', macos: 'du -sh' },
+            parametersAr: ['-s - ملخص فقط', '-h - مقروء للبشر', '--max-depth - تحديد عمق البحث']
+        }, {
+            id: 17,
+            category: 'networking',
+            system: 'cmd',
+            command: 'ipconfig',
+            syntax: 'ipconfig [/all] [/renew] [/release] [/flushdns]',
+            descriptionAr: 'يعرض إعدادات الشبكة الحالية في Windows. أهم أمر لتشخيص مشاكل الإنترنت. الخيار /flushdns ينظف ذاكرة DNS المؤقتة ويفيد عندما تواجه مشاكل في فتح المواقع.',
+            examplesAr: [
+                { cmd: 'ipconfig', desc: 'عرض ملخص لإعدادات الشبكة' },
+                { cmd: 'ipconfig /all', desc: 'عرض تفصيلي لكل بطاقات الشبكة' },
+                { cmd: 'ipconfig /flushdns', desc: 'تنظيف ذاكرة DNS (مفيد لمشاكل تصفح المواقع)' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { linux: 'ifconfig / ip addr', powershell: 'Get-NetIPAddress', macos: 'ifconfig' },
+            parametersAr: ['/all - عرض تفصيلي كامل', '/renew - تجديد IP من DHCP', '/flushdns - مسح ذاكرة DNS']
+        }, {
+            id: 18,
+            category: 'networking',
+            system: 'cmd',
+            command: 'ping',
+            syntax: 'ping [-t] [-n عدد] [-l حجم] [العنوان]',
+            descriptionAr: 'يختبر اتصال الشبكة بين جهازك وجهاز آخر. يرسل حزم بيانات ويقيس زمن الاستجابة. أهم أداة لتشخيص مشاكل الاتصال بالإنترنت أو الشبكة المحلية.',
+            examplesAr: [
+                { cmd: 'ping google.com', desc: 'اختبار الاتصال بموقع جوجل' },
+                { cmd: 'ping -t google.com', desc: 'اختبار مستمر بدون توقف (Ctrl+C للإيقاف)' },
+                { cmd: 'ping -n 10 google.com', desc: 'إرسال 10 حزم فقط' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { linux: 'ping -c', powershell: 'Test-Connection', macos: 'ping -c' },
+            parametersAr: ['-t - اختبار مستمر', '-n - عدد الحزم', '-l - حجم الحزمة بالبايت']
+        }, {
+            id: 19,
+            category: 'networking',
+            system: 'linux',
+            command: 'ping',
+            syntax: 'ping [خيارات] [العنوان]',
+            descriptionAr: 'نفس أمر ping في Windows لكن مع خيارات مختلفة. في Linux، ping يستمر في العمل للأبد حتى توقفه بـ Ctrl+C. استخدم -c لتحديد عدد الحزم.',
+            examplesAr: [
+                { cmd: 'ping -c 4 google.com', desc: 'إرسال 4 حزم فقط' },
+                { cmd: 'ping -i 0.5 google.com', desc: 'إرسال حزمة كل نصف ثانية' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'ping -n', powershell: 'Test-Connection', macos: 'ping -c' },
+            parametersAr: ['-c - عدد الحزم', '-i - الفاصل الزمني بين الحزم', '-s - حجم الحزمة']
+        }, {
+            id: 20,
+            category: 'networking',
+            system: 'powershell',
+            command: 'Test-Connection',
+            syntax: 'Test-Connection [-TargetName] [العنوان] [-Count عدد]',
+            descriptionAr: 'نسخة PowerShell من أمر ping لكن أقوى. يمكنه اختبار الاتصال بعدة أجهزة في نفس الوقت ويعيد نتائج ككائنات برمجية يمكن معالجتها.',
+            examplesAr: [
+                { cmd: 'Test-Connection google.com', desc: 'اختبار اتصال بسيط' },
+                { cmd: 'Test-Connection google.com -Count 4', desc: 'اختبار مع 4 محاولات' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'ping', linux: 'ping -c', macos: 'ping -c' },
+            parametersAr: ['-Count - عدد المحاولات', '-Delay - الفاصل بين المحاولات', '-BufferSize - حجم الحزمة']
+        }, {
+            id: 21,
+            category: 'networking',
+            system: 'cmd',
+            command: 'netstat',
+            syntax: 'netstat [-a] [-b] [-n] [-o]',
+            descriptionAr: 'يعرض كل اتصالات الشبكة النشطة حاليًا على جهازك. يفيد في معرفة البرامج المتصلة بالإنترنت والمنافذ المفتوحة. أداة مهمة للأمان ومراقبة الشبكة.',
+            examplesAr: [
+                { cmd: 'netstat -a', desc: 'عرض كل الاتصالات والمنافذ المستمعة' },
+                { cmd: 'netstat -b', desc: 'عرض البرنامج المسؤول عن كل اتصال' },
+                { cmd: 'netstat -an', desc: 'عرض الاتصالات بالأرقام بدل الأسماء' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { linux: 'ss -tuln', powershell: 'Get-NetTCPConnection', macos: 'netstat -an' },
+            parametersAr: ['-a - كل الاتصالات', '-b - اسم البرنامج', '-n - عناوين رقمية', '-o - معرف العملية']
+        }, {
+            id: 22,
+            category: 'networking',
+            system: 'linux',
+            command: 'ss',
+            syntax: 'ss [خيارات]',
+            descriptionAr: 'بديل حديث لأمر netstat في Linux. أسرع وأقوى ويعرض معلومات مفصلة عن اتصالات الشبكة والمنافذ المفتوحة. مهم لمراقبة أمان الخادوم.',
+            examplesAr: [
+                { cmd: 'ss -tuln', desc: 'عرض المنافذ المفتوحة والمستمعة' },
+                { cmd: 'ss -tulnp', desc: 'عرض المنافذ مع اسم البرنامج المستخدم' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'netstat -a', powershell: 'Get-NetTCPConnection', macos: 'netstat -an' },
+            parametersAr: ['-t - اتصالات TCP', '-u - اتصالات UDP', '-l - المنافذ المستمعة', '-n - عناوين رقمية']
+        }, {
+            id: 23,
+            category: 'networking',
+            system: 'cmd',
+            command: 'nslookup',
+            syntax: 'nslookup [اسم_النطاق] [خادم_DNS]',
+            descriptionAr: 'يستعلم من خوادم DNS للحصول على معلومات عن النطاقات وعناوين IP. يفيد جدًا في تشخيص مشاكل DNS ومعرفة إعدادات النطاقات مثل سجلات MX للبريد.',
+            examplesAr: [
+                { cmd: 'nslookup google.com', desc: 'معرفة عنوان IP الخاص بموقع جوجل' },
+                { cmd: 'nslookup -type=MX google.com', desc: 'معرفة خوادم البريد الخاصة بجوجل' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { linux: 'dig', powershell: 'Resolve-DnsName', macos: 'dig' },
+            parametersAr: ['-type=A - عنوان IPv4', '-type=MX - خوادم البريد', '-type=NS - خوادم النطاق']
+        }, {
+            id: 24,
+            category: 'networking',
+            system: 'linux',
+            command: 'dig',
+            syntax: 'dig [@خادم] [اسم_النطاق] [نوع]',
+            descriptionAr: 'أداة متقدمة للاستعلام عن DNS في Linux. أقوى بكثير من nslookup وتقدم معلومات تفصيلية عن سجلات DNS. يستخدمه محترفو الشبكات لتشخيص مشاكل النطاقات.',
+            examplesAr: [
+                { cmd: 'dig google.com', desc: 'استعلام كامل عن النطاق' },
+                { cmd: 'dig google.com MX', desc: 'معرفة خوادم البريد' },
+                { cmd: 'dig +short google.com', desc: 'عرض مختصر لعنوان IP فقط' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'nslookup', powershell: 'Resolve-DnsName', macos: 'dig' },
+            parametersAr: ['+short - عرض مختصر', '-x - استعلام عكسي', 'MX - سجلات البريد', 'ANY - كل السجلات']
+        }, {
+            id: 25,
+            category: 'system-management',
+            system: 'cmd',
+            command: 'systeminfo',
+            syntax: 'systeminfo [/fo {TABLE|LIST|CSV}]',
+            descriptionAr: 'يعرض معلومات شاملة عن جهاز الكمبيوتر: نوع المعالج، الذاكرة، نظام التشغيل، تحديثات النظام، وإحصائيات الشبكة. تقرير كامل عن حالة الجهاز في أمر واحد.',
+            examplesAr: [
+                { cmd: 'systeminfo', desc: 'عرض كل معلومات النظام' },
+                { cmd: 'systeminfo /fo LIST', desc: 'عرض المعلومات بشكل قائمة مفصلة' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { linux: 'uname -a / lshw', powershell: 'Get-ComputerInfo', macos: 'system_profiler' },
+            parametersAr: ['/fo - تنسيق الإخراج', '/s - نظام بعيد', '/u - اسم المستخدم']
+        }, {
+            id: 26,
+            category: 'system-management',
+            system: 'linux',
+            command: 'uname',
+            syntax: 'uname [خيارات]',
+            descriptionAr: 'يعرض معلومات أساسية عن نظام Linux: اسم النواة، إصدارها، نوع المعالج، ونظام التشغيل. الأمر uname -a يعرض كل المعلومات في سطر واحد.',
+            examplesAr: [
+                { cmd: 'uname -a', desc: 'عرض كل معلومات النظام' },
+                { cmd: 'uname -r', desc: 'عرض إصدار النواة فقط' },
+                { cmd: 'uname -m', desc: 'عرض نوع المعالج (64-bit أو 32-bit)' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'systeminfo', powershell: 'Get-ComputerInfo', macos: 'uname -a' },
+            parametersAr: ['-a - كل المعلومات', '-r - إصدار النواة', '-m - نوع المعالج', '-o - نظام التشغيل']
+        }, {
+            id: 27,
+            category: 'system-management',
+            system: 'cmd',
+            command: 'sfc',
+            syntax: 'sfc [/scannow] [/verifyonly]',
+            descriptionAr: 'مدقق ملفات النظام في Windows. يفحص ملفات النظام الأساسية ويصلح التالف منها. مهم عندما تواجه مشاكل في Windows أو رسائل خطأ غريبة. يحتاج تشغيل كمسؤول.',
+            examplesAr: [
+                { cmd: 'sfc /scannow', desc: 'فحص وإصلاح ملفات النظام التالفة' },
+                { cmd: 'sfc /verifyonly', desc: 'فحص فقط بدون إصلاح' }
+            ],
+            dangerLevel: 'medium',
+            crossRef: { linux: 'debsums', powershell: 'Repair-WindowsImage', macos: 'diskutil repairPermissions' },
+            parametersAr: ['/scannow - فحص وإصلاح', '/verifyonly - فحص فقط', '/scanfile - فحص ملف محدد']
+        }, {
+            id: 28,
+            category: 'system-management',
+            system: 'linux',
+            command: 'systemctl',
+            syntax: 'systemctl [أمر] [خدمة]',
+            descriptionAr: 'المتحكم الرئيسي في خدمات النظام في Linux الحديث. تبدأ وتوقف وتفعل الخدمات. أهم أمر لإدارة الخوادم: تشغيل وإيقاف خدمات مثل الويب وقواعد البيانات.',
+            examplesAr: [
+                { cmd: 'sudo systemctl start nginx', desc: 'تشغيل خادم الويب nginx' },
+                { cmd: 'sudo systemctl enable ssh', desc: 'تفعيل خدمة SSH للعمل تلقائيًا عند التشغيل' },
+                { cmd: 'systemctl status', desc: 'عرض حالة النظام والخدمات' }
+            ],
+            dangerLevel: 'high',
+            crossRef: { cmd: 'sc / net', powershell: 'Get-Service / Start-Service', macos: 'launchctl' },
+            parametersAr: ['start - تشغيل خدمة', 'stop - إيقاف خدمة', 'enable - تفعيل تلقائي', 'status - حالة الخدمة']
+        }, {
+            id: 29,
+            category: 'system-management',
+            system: 'powershell',
+            command: 'Get-Service',
+            syntax: 'Get-Service [[-Name] [اسم_الخدمة]]',
+            descriptionAr: 'يعرض خدمات Windows مع حالتها. يمكنك فلترة الخدمات العاملة فقط أو المتوقفة. مهم لمراقبة صحة النظام والتأكد من عمل الخدمات الأساسية.',
+            examplesAr: [
+                { cmd: 'Get-Service', desc: 'عرض كل الخدمات' },
+                { cmd: 'Get-Service | Where Status -eq "Running"', desc: 'عرض الخدمات العاملة فقط' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'sc query', linux: 'systemctl list-units', macos: 'launchctl list' },
+            parametersAr: ['-Name - اسم الخدمة', '-Status - تصفية حسب الحالة', '-DependentServices - الخدمات المعتمدة']
+        }, {
+            id: 30,
+            category: 'system-management',
+            system: 'cmd',
+            command: 'shutdown',
+            syntax: 'shutdown [/s | /r | /l] [/f] [/t ثواني]',
+            descriptionAr: 'إيقاف تشغيل أو إعادة تشغيل الكمبيوتر من سطر الأوامر. يمكنك تحديد وقت محدد للإيقاف أو الإلغاء. الأمر shutdown /a يلغي عملية الإيقاف المجدولة.',
+            examplesAr: [
+                { cmd: 'shutdown /s /t 60', desc: 'إيقاف التشغيل بعد 60 ثانية' },
+                { cmd: 'shutdown /r /t 0', desc: 'إعادة تشغيل فورية' },
+                { cmd: 'shutdown /a', desc: 'إلغاء عملية الإيقاف المجدولة' }
+            ],
+            dangerLevel: 'high',
+            crossRef: { linux: 'shutdown -h now', powershell: 'Stop-Computer', macos: 'sudo shutdown -h now' },
+            parametersAr: ['/s - إيقاف التشغيل', '/r - إعادة تشغيل', '/l - تسجيل الخروج', '/a - إلغاء', '/t - مهلة بالثواني']
+        }, {
+            id: 31,
+            category: 'process-management',
+            system: 'cmd',
+            command: 'tasklist',
+            syntax: 'tasklist [/V] [/FI "فلتر"]',
+            descriptionAr: 'يعرض قائمة بكل العمليات (البرامج) العاملة حاليًا في Windows. يفيد في معرفة البرامج التي تستهلك الذاكرة أو المعالج. يمكن تصدير القائمة لملف نصي.',
+            examplesAr: [
+                { cmd: 'tasklist', desc: 'عرض كل العمليات العاملة' },
+                { cmd: 'tasklist /V', desc: 'عرض تفصيلي مع معلومات إضافية' },
+                { cmd: 'tasklist /FI "MEMUSAGE gt 100000"', desc: 'عرض العمليات المستهلكة للذاكرة (>100MB)' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { linux: 'ps aux', powershell: 'Get-Process', macos: 'ps aux' },
+            parametersAr: ['/V - عرض تفصيلي', '/FI - تصفية النتائج', '/SVC - عرض الخدمات المرتبطة']
+        }, {
+            id: 32,
+            category: 'process-management',
+            system: 'linux',
+            command: 'ps',
+            syntax: 'ps [خيارات]',
+            descriptionAr: 'يعرض العمليات العاملة حاليًا في Linux. الأمر ps aux هو الأكثر استخدامًا ويعرض كل العمليات بتفاصيلها. يمكن دمجه مع grep للبحث عن عملية محددة.',
+            examplesAr: [
+                { cmd: 'ps aux', desc: 'عرض كل العمليات بتفاصيل كاملة' },
+                { cmd: 'ps aux --sort=-%mem', desc: 'ترتيب العمليات حسب استهلاك الذاكرة' },
+                { cmd: 'ps aux | grep nginx', desc: 'البحث عن عمليات nginx فقط' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'tasklist', powershell: 'Get-Process', macos: 'ps aux' },
+            parametersAr: ['aux - كل العمليات بتفاصيل', '-ef - صيغة كاملة', '-u - عمليات مستخدم محدد']
+        }, {
+            id: 33,
+            category: 'process-management',
+            system: 'cmd',
+            command: 'taskkill',
+            syntax: 'taskkill [/IM اسم_البرنامج] [/PID رقم_العملية] [/F] [/T]',
+            descriptionAr: 'ينهي العمليات (البرامج) العاملة في Windows. الخيار /F ينهي العملية بالقوة حتى لو كانت لا تستجيب. الخيار /T ينهي العملية وكل العمليات الفرعية التابعة لها.',
+            examplesAr: [
+                { cmd: 'taskkill /IM notepad.exe', desc: 'إنهاء برنامج المفكرة' },
+                { cmd: 'taskkill /PID 1234 /F', desc: 'إنهاء العملية رقم 1234 بالقوة' },
+                { cmd: 'taskkill /IM chrome.exe /T', desc: 'إنهاء كروم وكل نوافذه المفتوحة' }
+            ],
+            dangerLevel: 'high',
+            crossRef: { linux: 'kill -9', powershell: 'Stop-Process', macos: 'kill -9' },
+            parametersAr: ['/IM - اسم البرنامج', '/PID - رقم العملية', '/F - إنهاء بالقوة', '/T - إنهاء مع التوابع']
+        }, {
+            id: 34,
+            category: 'process-management',
+            system: 'linux',
+            command: 'kill',
+            syntax: 'kill [إشارة] [PID]',
+            descriptionAr: 'يرسل إشارة لعملية معينة في Linux. الإشارة 9 (SIGKILL) تنهي العملية فورًا بالقوة. الإشارة 15 (SIGTERM) تطلب من العملية الإنهاء بشكل طبيعي.',
+            examplesAr: [
+                { cmd: 'kill 1234', desc: 'طلب إنهاء العملية 1234 بشكل طبيعي' },
+                { cmd: 'kill -9 1234', desc: 'إنهاء العملية فورًا بالقوة' },
+                { cmd: 'killall firefox', desc: 'إنهاء كل عمليات Firefox' }
+            ],
+            dangerLevel: 'high',
+            crossRef: { cmd: 'taskkill /PID', powershell: 'Stop-Process -Id', macos: 'kill' },
+            parametersAr: ['-9 - إنهاء فوري بالقوة', '-15 - طلب إنهاء طبيعي', '-l - عرض قائمة الإشارات']
+        }, {
+            id: 35,
+            category: 'security-permissions',
+            system: 'cmd',
+            command: 'whoami',
+            syntax: 'whoami [/user] [/groups] [/priv]',
+            descriptionAr: 'يعرض معلومات عن المستخدم الحالي: اسم المستخدم، رقمه التعريفي SID، المجموعات التي ينتمي إليها، والصلاحيات الممنوحة له. مهم لمعرفة إذا كنت تعمل كمسؤول أم لا.',
+            examplesAr: [
+                { cmd: 'whoami', desc: 'عرض اسم المستخدم الحالي' },
+                { cmd: 'whoami /user', desc: 'عرض رقم SID الخاص بالمستخدم' },
+                { cmd: 'whoami /groups', desc: 'عرض كل المجموعات التي ينتمي لها المستخدم' },
+                { cmd: 'whoami /priv', desc: 'عرض الصلاحيات الممنوحة للمستخدم' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { linux: 'whoami / id', powershell: 'whoami', macos: 'whoami / id' },
+            parametersAr: ['/user - رقم SID', '/groups - المجموعات', '/priv - الصلاحيات']
+        }, {
+            id: 36,
+            category: 'security-permissions',
+            system: 'linux',
+            command: 'sudo',
+            syntax: 'sudo [خيارات] أمر',
+            descriptionAr: 'ينفذ أمرًا بصلاحيات المستخدم الجذر (root) أو مستخدم آخر. أساسي لإدارة نظام Linux. يجب استخدامه بحذر لأن الأوامر الخاطئة مع sudo قد تدمر النظام.',
+            examplesAr: [
+                { cmd: 'sudo apt update', desc: 'تحديث قائمة الحزم بصلاحيات المدير' },
+                { cmd: 'sudo -i', desc: 'فتح جلسة shell كاملة كـ root' },
+                { cmd: 'sudo !!', desc: 'إعادة تشغيل آخر أمر مع sudo (مفيد جدًا!)' }
+            ],
+            dangerLevel: 'high',
+            crossRef: { cmd: 'runas', powershell: 'Start-Process -Verb RunAs', macos: 'sudo' },
+            parametersAr: ['-i - جلسة كـ root', '-u - تنفيذ كمستخدم آخر', '-l - عرض الصلاحيات']
+        }, {
+            id: 37,
+            category: 'security-permissions',
+            system: 'cmd',
+            command: 'icacls',
+            syntax: 'icacls [ملف/مجلد] [/grant مستخدم:صلاحية] [/deny] [/remove]',
+            descriptionAr: 'يدير صلاحيات الملفات والمجلدات في Windows. يمكنك منح أو رفض صلاحيات القراءة والكتابة والتنفيذ لمستخدمين محددين. أداة متقدمة للتحكم في أمان الملفات.',
+            examplesAr: [
+                { cmd: 'icacls file.txt', desc: 'عرض الصلاحيات الحالية للملف' },
+                { cmd: 'icacls folder\\ /grant User:F', desc: 'منح مستخدم صلاحيات كاملة على مجلد' },
+                { cmd: 'icacls file.txt /inheritance:r', desc: 'إزالة الوراثة من الصلاحيات' }
+            ],
+            dangerLevel: 'high',
+            crossRef: { linux: 'setfacl', powershell: 'Set-Acl', macos: 'chmod +a' },
+            parametersAr: ['/grant - منح صلاحية', '/deny - رفض صلاحية', '/remove - إزالة صلاحية',
+                '/inheritance - إدارة الوراثة'
+            ]
+        }, {
+            id: 38,
+            category: 'security-permissions',
+            system: 'linux',
+            command: 'chown',
+            syntax: 'chown [خيارات] مالك[:مجموعة] ملف',
+            descriptionAr: 'يغير مالك الملف أو المجلد في Linux. يمكنك تغيير المالك والمجموعة معًا. الخيار -R يطبق التغيير على كل المحتويات بشكل تكراري.',
+            examplesAr: [
+                { cmd: 'sudo chown user file.txt', desc: 'تغيير مالك الملف' },
+                { cmd: 'sudo chown user:group file.txt', desc: 'تغيير المالك والمجموعة معًا' },
+                { cmd: 'sudo chown -R user:group folder/', desc: 'تغيير مالك مجلد كامل ومحتوياته' }
+            ],
+            dangerLevel: 'medium',
+            crossRef: { cmd: 'takeown / icacls', powershell: 'Set-Acl', macos: 'chown' },
+            parametersAr: ['-R - تكراري', '-v - عرض التفاصيل', '-c - عرض التغييرات فقط']
+        }, {
+            id: 39,
+            category: 'security-permissions',
+            system: 'cmd',
+            command: 'net user',
+            syntax: 'net user [اسم_المستخدم] [كلمة_المرور] [/add] [/delete] [/active]',
+            descriptionAr: 'يدير حسابات المستخدمين في Windows. يمكنك إنشاء مستخدمين جدد، حذفهم، تغيير كلمات المرور، وتفعيل أو تعطيل الحسابات. يحتاج صلاحيات مسؤول.',
+            examplesAr: [
+                { cmd: 'net user', desc: 'عرض كل المستخدمين' },
+                { cmd: 'net user Admin *', desc: 'تغيير كلمة مرور المستخدم Admin' },
+                { cmd: 'net user NewUser P@ssw0rd /add', desc: 'إنشاء مستخدم جديد' },
+                { cmd: 'net user Guest /active:no', desc: 'تعطيل حساب الضيف' }
+            ],
+            dangerLevel: 'high',
+            crossRef: { linux: 'useradd / passwd', powershell: 'New-LocalUser', macos: 'dscl . -create' },
+            parametersAr: ['/add - إنشاء مستخدم', '/delete - حذف مستخدم', '/active - تفعيل/تعطيل']
+        }, {
+            id: 40,
+            category: 'text-processing',
+            system: 'cmd',
+            command: 'find',
+            syntax: 'find "نص" [ملف] [/I] [/C] [/N] [/V]',
+            descriptionAr: 'يبحث عن نص معين داخل ملف أو مجموعة ملفات في Windows CMD. الخيار /I يجعل البحث غير حساس لحالة الأحرف. أداة أساسية لتحليل ملفات السجلات.',
+            examplesAr: [
+                { cmd: 'find "error" logfile.txt', desc: 'البحث عن كلمة error في ملف السجل' },
+                { cmd: 'find /I "warning" *.log', desc: 'بحث غير حساس لحالة الأحرف' },
+                { cmd: 'find /C "404" access.log', desc: 'عد مرات ظهور الرمز 404' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { linux: 'grep', powershell: 'Select-String', macos: 'grep' },
+            parametersAr: ['/I - تجاهل حالة الأحرف', '/C - العد فقط', '/N - أرقام الأسطر', '/V - عرض ما لا يحتوي']
+        }, {
+            id: 41,
+            category: 'text-processing',
+            system: 'cmd',
+            command: 'findstr',
+            syntax: 'findstr [/S] [/I] [/R] "نمط" [ملفات]',
+            descriptionAr: 'أداة بحث متقدمة في Windows CMD تدعم التعابير النمطية (Regular Expressions). أقوى من find بكثير وتستخدم لتحليل متقدم للنصوص وملفات السجلات.',
+            examplesAr: [
+                { cmd: 'findstr "error" *.log', desc: 'بحث بسيط في ملفات السجل' },
+                { cmd: 'findstr /S /I "exception" *.txt', desc: 'بحث في كل المجلدات الفرعية' },
+                { cmd: 'findstr /R "^[0-9]+" data.txt', desc: 'بحث باستخدام تعبير نمطي' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { linux: 'grep -E', powershell: 'Select-String', macos: 'grep -E' },
+            parametersAr: ['/S - المجلدات الفرعية', '/I - تجاهل حالة الأحرف', '/R - تعبير نمطي', '/N - أرقام الأسطر']
+        }, {
+            id: 42,
+            category: 'text-processing',
+            system: 'linux',
+            command: 'grep',
+            syntax: 'grep [خيارات] نمط [ملف]',
+            descriptionAr: 'أداة البحث الأقوى في Linux. تبحث داخل الملفات باستخدام أنماط نصية أو تعابير نمطية معقدة. من أهم الأدوات للمبرمجين ومسؤولي الأنظمة لتحليل السجلات.',
+            examplesAr: [
+                { cmd: 'grep "error" log.txt', desc: 'بحث عن كلمة error في ملف' },
+                { cmd: 'grep -r "TODO" ./src/', desc: 'بحث تكراري في كل ملفات المشروع' },
+                { cmd: 'grep -c "404" access.log', desc: 'عد مرات ظهور خطأ 404' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'findstr', powershell: 'Select-String', macos: 'grep' },
+            parametersAr: ['-r - بحث تكراري', '-i - تجاهل حالة الأحرف', '-c - العد', '-v - عكس النتائج',
+                '-E - تعابير نمطية'
+            ]
+        }, {
+            id: 43,
+            category: 'text-processing',
+            system: 'powershell',
+            command: 'Select-String',
+            syntax: 'Select-String [-Pattern] "نمط" [-Path] [ملف]',
+            descriptionAr: 'أداة PowerShell للبحث في النصوص والملفات باستخدام التعابير النمطية. تتميز بقدرتها على البحث في مخرجات أوامر أخرى عبر الأنابيب (Pipeline).',
+            examplesAr: [
+                { cmd: 'Select-String "error" log.txt', desc: 'بحث عن كلمة error في ملف' },
+                { cmd: 'Get-Content file.txt | Select-String "^[A-Z]"', desc: 'البحث في مخرجات أمر آخر' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'findstr', linux: 'grep', macos: 'grep' },
+            parametersAr: ['-Pattern - النمط', '-Path - الملف', '-CaseSensitive - حساس لحالة الأحرف',
+                '-NotMatch - عكس النتائج'
+            ]
+        }, {
+            id: 44,
+            category: 'text-processing',
+            system: 'linux',
+            command: 'awk',
+            syntax: 'awk \'نمط { إجراء }\' [ملف]',
+            descriptionAr: 'لغة معالجة نصوص كاملة داخل Linux. تستطيع استخراج أعمدة محددة، إجراء عمليات حسابية، وتنسيق المخرجات. أداة قوية جدًا لتحليل البيانات المنظمة.',
+            examplesAr: [
+                { cmd: "awk '{print $1}' file.txt", desc: 'طباعة العمود الأول فقط' },
+                { cmd: "awk -F',' '{print $2}' data.csv", desc: 'استخراج العمود الثاني من ملف CSV' },
+                { cmd: "awk '{sum+=$3} END {print sum}' data.txt", desc: 'جمع قيم العمود الثالث' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'for /f', powershell: 'ForEach-Object', macos: 'awk' },
+            parametersAr: ['-F - محدد الحقول', '{print $N} - طباعة عمود', 'END - إجراء بعد المعالجة']
+        }, {
+            id: 45,
+            category: 'text-processing',
+            system: 'linux',
+            command: 'sed',
+            syntax: 'sed \'أمر\' [ملف]',
+            descriptionAr: 'محرر نصوص تدفقي في Linux. يستخدم لاستبدال النصوص، حذف الأسطر، وإجراء تحويلات على الملفات بدون فتحها. أداة أساسية للأتمتة ومعالجة الملفات الكبيرة.',
+            examplesAr: [
+                { cmd: "sed 's/old/new/g' file.txt", desc: 'استبدال كل old بـ new' },
+                { cmd: "sed -n '5,10p' file.txt", desc: 'عرض الأسطر من 5 إلى 10 فقط' },
+                { cmd: "sed '/pattern/d' file.txt", desc: 'حذف الأسطر التي تحتوي على النمط' }
+            ],
+            dangerLevel: 'medium',
+            crossRef: { cmd: 'powershell -replace', powershell: '-replace', macos: 'sed' },
+            parametersAr: ['s/old/new/g - استبدال شامل', '-n - منع الطباعة', 'd - حذف', '-i - تعديل الملف مباشرة']
+        }, {
+            id: 46,
+            category: 'advanced',
+            system: 'cmd',
+            command: 'wmic',
+            syntax: 'wmic [قسم] [أمر]',
+            descriptionAr: 'أداة Windows Management Instrumentation للاستعلام عن معلومات النظام. تستطيع الحصول على معلومات دقيقة عن المعالج، الذاكرة، القرص، والعمليات. أداة متقدمة لمسؤولي الأنظمة.',
+            examplesAr: [
+                { cmd: 'wmic cpu get name', desc: 'معرفة اسم ونوع المعالج' },
+                { cmd: 'wmic os get Caption,Version', desc: 'معرفة إصدار Windows' },
+                { cmd: 'wmic logicaldisk get size,freespace,caption', desc: 'معرفة مساحة الأقراص' }
+            ],
+            dangerLevel: 'medium',
+            crossRef: { linux: 'lshw', powershell: 'Get-CimInstance', macos: 'sysctl' },
+            parametersAr: ['cpu - معلومات المعالج', 'os - نظام التشغيل', 'logicaldisk - الأقراص', 'process - العمليات']
+        }, {
+            id: 47,
+            category: 'advanced',
+            system: 'linux',
+            command: 'journalctl',
+            syntax: 'journalctl [خيارات]',
+            descriptionAr: 'يستعرض سجلات النظام في Linux (systemd). يجمع كل سجلات النظام في مكان واحد مع إمكانية فلترة حسب الخدمة أو الوقت. أداة أساسية لتشخيص المشاكل.',
+            examplesAr: [
+                { cmd: 'journalctl -u nginx', desc: 'عرض سجلات خدمة nginx فقط' },
+                { cmd: 'journalctl -f', desc: 'متابعة السجلات مباشرة (مثل tail -f)' },
+                { cmd: 'journalctl --since "1 hour ago"', desc: 'عرض سجلات آخر ساعة' }
+            ],
+            dangerLevel: 'low',
+            crossRef: { cmd: 'wevtutil', powershell: 'Get-WinEvent', macos: 'log show' },
+            parametersAr: ['-u - خدمة محددة', '-f - متابعة مباشرة', '-b - منذ التشغيل الحالي', '--since - منذ وقت']
+        }, {
+            id: 48,
+            category: 'advanced',
+            system: 'cmd',
+            command: 'reg',
+            syntax: 'reg [QUERY|ADD|DELETE|EXPORT] [مسار]',
+            descriptionAr: 'أداة إدارة سجل النظام (Registry) في Windows. من أخطر الأدوات لأن تعديل الـ Registry بطريقة خاطئة قد يعطل النظام. استخدم EXPORT لعمل نسخة احتياطية قبل التعديل.',
+            examplesAr: [
+                { cmd: 'reg query HKLM\\Software', desc: 'استعلام عن مفتاح في السجل' },
+                { cmd: 'reg export HKLM\\Software backup.reg', desc: 'تصدير نسخة احتياطية من السجل' }
+            ],
+            dangerLevel: 'critical',
+            crossRef: { linux: 'gconf / dconf', powershell: 'Get-ItemProperty / Set-ItemProperty', macos: 'defaults' },
+            parametersAr: ['QUERY - استعلام', 'ADD - إضافة/تعديل', 'DELETE - حذف', 'EXPORT - نسخة احتياطية']
+        }];
+
+        // ═══════════════════════════════════════════
+        // APPLICATION STATE
+        // ═══════════════════════════════════════════
+        let activeCategory = 'all';
+        let activeSystemFilter = 'all';
+        let searchQuery = '';
+
+        // ═══════════════════════════════════════════
+        // RENDER COMMANDS
+        // ═══════════════════════════════════════════
+        function getFilteredCommands() {
+            let filtered = commandDatabase;
+            if (activeCategory !== 'all') filtered = filtered.filter(c => c.category === activeCategory);
+            if (activeSystemFilter !== 'all') filtered = filtered.filter(c => c.system === activeSystemFilter);
+            if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase();
+                filtered = filtered.filter(c =>
+                    c.command.toLowerCase().includes(q) ||
+                    c.descriptionAr.includes(q) ||
+                    c.category.includes(q)
+                );
+            }
+            return filtered;
+        }
+
+        function getCommandsBySystem(filtered) {
+            const grouped = {};
+            const order = ['cmd', 'powershell', 'linux', 'macos'];
+            const names = { cmd: 'Windows CMD', powershell: 'PowerShell', linux: 'Linux Shell', macos: 'macOS Terminal' };
+            const icons = { cmd: '⊞', powershell: '⚡', linux: '🐧', macos: '🍎' };
+            const dots = { cmd: 'win', powershell: 'ps', linux: 'lin', macos: 'mac' };
+            const badges = { cmd: 'badge-cmd', powershell: 'badge-ps', linux: 'badge-linux', macos: 'badge-mac' };
+
+            order.forEach(sys => {
+                const cmds = filtered.filter(c => c.system === sys);
+                if (cmds.length > 0) grouped[sys] = { name: names[sys], icon: icons[sys],
+                    dotClass: dots[sys], badgeClass: badges[sys], commands: cmds };
+            });
+            return grouped;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function copyCommand(command, event) {
+            event.stopPropagation();
+            navigator.clipboard.writeText(command).then(() => {
+                showToast('✅ تم نسخ الأمر: ' + command);
+                const btn = event.target.closest('.btn-copy');
+                if (btn) {
+                    btn.classList.add('copied');
+                    btn.innerHTML = '✅ تم النسخ!';
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        btn.innerHTML = '📋 نسخ الأمر';
+                    }, 1500);
+                }
+            }).catch(() => showToast('⚠️ فشل النسخ، حاول مرة أخرى'));
+        }
+
+        function runCommand(system, command, event) {
+            event.stopPropagation();
+            showToast('🚀 جاري تنفيذ: ' + command + ' على ' + system);
+        }
+
+        function toggleCard(id) {
+            const card = document.getElementById('card-' + id);
+            if (!card) return;
+            const wasExpanded = card.classList.contains('expanded');
+            document.querySelectorAll('.command-card.expanded').forEach(c => c.classList.remove('expanded'));
+            if (!wasExpanded) {
+                card.classList.add('expanded');
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function renderCommands() {
+            const container = document.getElementById('commandsContainer');
+            const filtered = getFilteredCommands();
+            const grouped = getCommandsBySystem(filtered);
+            document.getElementById('visibleCount').textContent = filtered.length + ' أمر';
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center;padding:60px;color:var(--text-muted);">
+                        <div style="font-size:48px;margin-bottom:16px;">🔍</div>
+                        <div style="font-size:16px;">لا توجد نتائج</div>
+                        <div style="font-size:12px;margin-top:8px;">جرب تغيير البحث أو الفلتر</div>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            for (const [sysKey, sysData] of Object.entries(grouped)) {
+                html += `
+                <div class="system-section">
+                    <div class="system-section-header">
+                        <span class="system-dot ${sysData.dotClass}"></span>
+                        <span>${sysData.icon} ${sysData.name}</span>
+                        <span style="font-size:10px;color:var(--text-muted);">(${sysData.commands.length} أوامر)</span>
+                    </div>
+                    <div class="commands-grid">`;
+
+                sysData.commands.forEach(cmd => {
+                    const dangerClass = 'danger-' + cmd.dangerLevel;
+                    const dangerLabel = cmd.dangerLevel === 'low' ? 'آمن' : cmd.dangerLevel ===
+                        'medium' ? 'متوسط' : cmd.dangerLevel === 'high' ? 'خطير' : 'حرج';
+                    let crossRefHtml = '';
+                    if (cmd.crossRef) {
+                        for (const [refSys, refCmd] of Object.entries(cmd.crossRef)) {
+                            const refNames = { cmd: 'CMD', powershell: 'PS', linux: 'Linux',
+                                macos: 'macOS' };
+                            crossRefHtml +=
+                                `<span class="cross-ref-chip">${refNames[refSys]}: ${refCmd}</span>`;
+                        }
+                    }
+                    let examplesHtml = '';
+                    if (cmd.examplesAr) {
+                        cmd.examplesAr.forEach(ex => {
+                            examplesHtml +=
+                                `
+                                <div class="example-line">$ ${ex.cmd}</div>
+                                <div class="example-desc">↳ ${ex.desc}</div>`;
+                        });
+                    }
+
+                    html += `
+                    <div class="command-card" id="card-${cmd.id}" onclick="toggleCard(${cmd.id})">
+                        <div class="command-card-header">
+                            <span class="command-name">${cmd.command}</span>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <span class="danger-level ${dangerClass}">${dangerLabel}</span>
+                                <span class="command-system-badge ${sysData.badgeClass}">${sysData.name}</span>
+                            </div>
+                        </div>
+                        <div class="command-ar-desc">📖 ${cmd.descriptionAr}</div>
+                        <div class="command-syntax">${cmd.syntax}</div>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn-copy" onclick="copyCommand('${cmd.command}', event)">📋 نسخ الأمر</button>
+                            <button class="btn-run" onclick="runCommand('${sysKey}', '${cmd.command}', event)">▶ تشغيل</button>
+                        </div>
+                        <div class="command-details">
+                            ${cmd.examplesAr ? `
+                            <div class="detail-section">
+                                <div class="detail-label">📋 أمثلة عملية</div>
+                                <div class="detail-examples">${examplesHtml}</div>
+                            </div>` : ''}
+                            ${cmd.crossRef ? `
+                            <div class="detail-section">
+                                <div class="detail-label">🔄 الأوامر المقابلة في الأنظمة الأخرى</div>
+                                <div class="cross-ref">${crossRefHtml}</div>
+                            </div>` : ''}
+                            ${cmd.parametersAr ? `
+                            <div class="detail-section">
+                                <div class="detail-label">⚙️ الخيارات والبارامترات</div>
+                                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                                    ${cmd.parametersAr.map(p => `<span style="background:var(--bg-tertiary);padding:4px 10px;border-radius:12px;font-size:10px;color:var(--text-secondary);">${p}</span>`).join('')}
+                                </div>
+                            </div>` : ''}
+                        </div>
+                    </div>`;
+                });
+
+                html += `</div></div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // ═══ EVENT LISTENERS ═══
+        document.querySelectorAll('.sidebar-category').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-category').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                activeCategory = this.dataset.category;
+                const names = {
+                    'all': '📋 جميع الأوامر',
+                    'file-management': '📁 إدارة الملفات',
+                    'disk-management': '💿 إدارة الأقراص',
+                    'networking': '🌍 الشبكات والاتصالات',
+                    'system-management': '🖥 إدارة النظام',
+                    'process-management': '📊 إدارة العمليات',
+                    'security-permissions': '🔒 الصلاحيات والأمان',
+                    'text-processing': '📝 معالجة النصوص',
+                    'advanced': '🛠 أوامر متقدمة'
+                };
+                document.getElementById('categoryName').textContent = names[activeCategory] || 'جميع الأوامر';
+                renderCommands();
+            });
+        });
+
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                activeSystemFilter = this.dataset.filter;
+                renderCommands();
+            });
+        });
+
+        let searchTimeout;
+        document.getElementById('searchBox').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchQuery = this.value;
+                renderCommands();
+            }, 250);
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('searchBox').focus();
+            }
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.command-card.expanded').forEach(c => c.classList.remove(
+                    'expanded'));
+            }
+        });
+
+        // ═══ INITIAL RENDER ═══
+        renderCommands();
+
+        console.log('%c⬡ OmniShell v1.0.0 %cمكتبة أوامر الأنظمة المتعددة',
+            'color: #58a6ff; font-size: 20px; font-weight: bold;',
+            'color: #bc8cff; font-size: 14px;');
+        console.log('%c48 أمر | 4 أنظمة | 9 فئات | شرح عربي كامل',
+            'color: #8b949e;');
+        console.log('%cCtrl+K للبحث | اضغط على أي بطاقة للتوسيع',
+            'color: #3fb950;');
+    </script>
+
+</body>
+</html>
