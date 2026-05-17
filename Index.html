@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nex Command - مكتبة الأوامر الشاملة</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header>
+    <h1>⬡ Nex Command</h1>
+    <p>المكتبة الشاملة لأوامر الأنظمة - في مكان واحد</p>
+    <small>اختصار: <kbd>Ctrl+K</kbd> للبحث | <kbd>Esc</kbd> للإغلاق</small>
+  </header>
+
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="🔍 ابحث عن أمر... (Ctrl+K)">
+    <select id="systemFilter">
+      <option value="all">🖥 كل الأنظمة</option>
+      <option value="windows-cmd">Windows CMD</option>
+      <option value="powershell">PowerShell</option>
+      <option value="linux">Linux Shell</option>
+      <option value="macos">macOS Terminal</option>
+    </select>
+    <select id="categoryFilter">
+      <option value="all">📂 كل الفئات</option>
+      <option value="file-management">إدارة الملفات</option>
+      <option value="disk-management">إدارة الأقراص</option>
+      <option value="networking">الشبكات</option>
+      <option value="system-management">إدارة النظام</option>
+      <option value="process-management">العمليات</option>
+      <option value="security">الأمان</option>
+      <option value="text-processing">النصوص</option>
+      <option value="advanced">أوامر متقدمة</option>
+    </select>
+  </div>
+
+  <div class="commands-grid" id="commandsGrid">
+    <!-- يتم ملؤها تلقائياً عبر JavaScript -->
+  </div>
+
+  <!-- نافذة التفاصيل المنبثقة -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modalBody">
+      <!-- يتم ملؤها تلقائياً -->
+    </div>
+  </div>
+
+  <footer>
+    <p>🖥 Nex Command | مشروع مفتوح المصدر | MIT License</p>
+  </footer>
+
+  <!-- ملفات الجافاسكريبت بالترتيب -->
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

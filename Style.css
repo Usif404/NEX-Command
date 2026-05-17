@@ -1,0 +1,238 @@
+/* ========== الأساسيات ========== */
+:root {
+  --bg: #0a0a0a;
+  --card: #111;
+  --border: #222;
+  --text: #ddd;
+  --cyan: #00e5ff;
+  --red: #ff1744;
+  --yellow: #ffea00;
+  --green: #00e676;
+  --orange: #ff9100;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', monospace;
+  line-height: 1.6;
+  padding: 10px;
+}
+
+/* ========== الرأس ========== */
+header {
+  text-align: center;
+  padding: 25px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+header h1 {
+  color: var(--cyan);
+  font-size: 2em;
+  text-shadow: 0 0 15px var(--cyan);
+}
+
+/* ========== البحث والتصفية ========== */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.controls input,
+.controls select {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 1em;
+  outline: none;
+  transition: 0.3s;
+}
+
+.controls input:focus,
+.controls select:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.3);
+}
+
+.controls input {
+  min-width: 250px;
+  flex: 1;
+}
+
+/* ========== شبكة البطاقات ========== */
+.commands-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 15px;
+  padding: 20px;
+}
+
+/* ========== بطاقة الأمر ========== */
+.command-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  cursor: pointer;
+  transition: 0.3s;
+  position: relative;
+}
+
+.command-card:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.15);
+  transform: translateY(-3px);
+}
+
+.command-card h3 {
+  color: var(--cyan);
+  font-size: 1.2em;
+  margin-bottom: 8px;
+  font-family: monospace;
+}
+
+.command-card .system-badge {
+  display: inline-block;
+  background: rgba(0, 229, 255, 0.15);
+  color: var(--cyan);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75em;
+  margin-right: 8px;
+}
+
+.command-card .danger-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75em;
+}
+
+.danger-safe { background: rgba(0, 230, 118, 0.2); color: var(--green); }
+.danger-medium { background: rgba(255, 234, 0, 0.2); color: var(--yellow); }
+.danger-high { background: rgba(255, 145, 0, 0.2); color: var(--orange); }
+.danger-critical { background: rgba(255, 23, 68, 0.2); color: var(--red); }
+
+.command-card .desc {
+  margin-top: 8px;
+  font-size: 0.9em;
+  color: #aaa;
+}
+
+.command-card .copy-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  padding: 5px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: 0.3s;
+  opacity: 0;
+}
+
+.command-card:hover .copy-btn {
+  opacity: 1;
+}
+
+.copy-btn:hover {
+  background: var(--cyan);
+  color: #000;
+}
+
+/* ========== نافذة التفاصيل ========== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8);
+  z-index: 999;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--card);
+  border: 1px solid var(--cyan);
+  border-radius: 12px;
+  padding: 25px;
+  max-width: 650px;
+  width: 95%;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal h2 {
+  color: var(--cyan);
+  margin-bottom: 15px;
+  font-family: monospace;
+  font-size: 1.4em;
+}
+
+.modal .syntax {
+  background: #000;
+  border: 1px solid #333;
+  padding: 12px;
+  border-radius: 6px;
+  margin: 10px 0;
+  font-family: monospace;
+  color: var(--green);
+}
+
+.modal .cross-ref {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.cross-ref span {
+  background: rgba(255,255,255,0.05);
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.85em;
+  font-family: monospace;
+}
+
+.modal .close-btn {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  margin-top: 10px;
+}
+
+/* ========== تذييل ========== */
+footer {
+  text-align: center;
+  padding: 20px;
+  color: #555;
+  font-size: 0.9em;
+  border-top: 1px solid var(--border);
+  margin-top: 30px;
+}
+
+/* ========== تجاوب ========== */
+@media (max-width: 600px) {
+  header h1 { font-size: 1.5em; }
+  .commands-grid { grid-template-columns: 1fr; }
+  .controls { flex-direction: column; }
+  .controls input { min-width: auto; }
+}
